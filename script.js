@@ -1,42 +1,53 @@
-// Your script here.
 
+const msg = new SpeechSynthesisUtterance();
+let voices = [];
+
+const voicesDropdown = document.querySelector('[name="voice"]');
+const options = document.querySelectorAll('[type="range"], [name="text"]');
+const speakButton = document.querySelector('#speak');
+const stopButton = document.querySelector('#stop');
+
+
+// Populate voices
 function populateVoices() {
-    voices = speechSynthesis.getVoices();
+    voices = window.speechSynthesis.getVoices();
 
-    voicesDropdown.innerHTML = "";
+    voicesDropdown.innerHTML = '<option value="">Select A Voice</option>';
 
-    if (voices.length === 0) {
-        let option = document.createElement("option");
-        option.textContent = "No voices available";
-        voicesDropdown.appendChild(option);
-        return;
-    }
-
-    voices.forEach(function(voice) {
-        let option = document.createElement("option");
+    voices.forEach((voice) => {
+        const option = document.createElement('option');
 
         option.value = voice.name;
         option.textContent = `${voice.name} (${voice.lang})`;
 
         voicesDropdown.appendChild(option);
     });
+
+    if (voices.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = 'No voices available';
+        voicesDropdown.appendChild(option);
+    }
 }
 
-// Load available voices
+
+// Load voices
 populateVoices();
 
-speechSynthesis.onvoiceschanged = populateVoices;
+window.speechSynthesis.addEventListener('voiceschanged', populateVoices);
 
 
 // Set speech settings
 function setSpeech() {
     msg.text = document.querySelector('[name="text"]').value;
-    msg.rate = document.querySelector('[name="rate"]').value;
-    msg.pitch = document.querySelector('[name="pitch"]').value;
 
-    let selectedVoice = voices.find(function(voice) {
-        return voice.name === voicesDropdown.value;
-    });
+    msg.rate = Number(document.querySelector('[name="rate"]').value);
+
+    msg.pitch = Number(document.querySelector('[name="pitch"]').value);
+
+    const selectedVoice = voices.find(
+        (voice) => voice.name === voicesDropdown.value
+    );
 
     if (selectedVoice) {
         msg.voice = selectedVoice;
@@ -46,45 +57,49 @@ function setSpeech() {
 
 // Speak function
 function toggle() {
+    setSpeech();
+
     if (!msg.text.trim()) {
         return;
     }
 
-    setSpeech();
-
     if (voices.length === 0) {
-        alert("No voices available");
+        alert('No voices available');
         return;
     }
 
-    speechSynthesis.cancel();
-    speechSynthesis.speak(msg);
+    window.speechSynthesis.cancel();
+
+    window.speechSynthesis.speak(msg);
 }
 
 
 // Stop function
 function stop() {
-    speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
 }
 
 
-// Event listeners
-speakButton.addEventListener("click", toggle);
+// Speak and Stop events
+speakButton.addEventListener('click', toggle);
 
-stopButton.addEventListener("click", stop);
+stopButton.addEventListener('click', stop);
 
 
-// Update rate and pitch dynamically
-options.forEach(function(option) {
-    option.addEventListener("change", setSpeech);
+// Update settings dynamically
+options.forEach((option) => {
+    option.addEventListener('input', setSpeech);
+    option.addEventListener('change', setSpeech);
 });
 
 
-// Restart speech when voice changes
-voicesDropdown.addEventListener("change", function() {
-    if (speechSynthesis.speaking) {
+// Change voice during speech
+voicesDropdown.addEventListener('change', () => {
+    const wasSpeaking = window.speechSynthesis.speaking;
+
+    setSpeech();
+
+    if (wasSpeaking) {
         toggle();
-    } else {
-        setSpeech();
     }
 });
