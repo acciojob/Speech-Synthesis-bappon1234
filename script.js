@@ -1,34 +1,26 @@
 
-const msg = new SpeechSynthesisUtterance();
-let voices = [];
-
-const voicesDropdown = document.querySelector('[name="voice"]');
-const options = document.querySelectorAll('[type="range"], [name="text"]');
-const speakButton = document.querySelector('#speak');
-const stopButton = document.querySelector('#stop');
-
-
-// Populate voices
 function populateVoices() {
     voices = window.speechSynthesis.getVoices();
 
-    const previousVoice = voicesDropdown.value;
-
     voicesDropdown.innerHTML = '<option value="">Select A Voice</option>';
+
+    if (voices.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = 'No voices available';
+        voicesDropdown.appendChild(option);
+        return;
+    }
 
     voices.forEach((voice) => {
         const option = document.createElement('option');
         option.value = voice.name;
         option.textContent = `${voice.name} (${voice.lang})`;
-
         voicesDropdown.appendChild(option);
     });
-
-    if (voices.some(voice => voice.name === previousVoice)) {
-        voicesDropdown.value = previousVoice;
-    }
 }
 
+
+// Load voices
 populateVoices();
 
 window.speechSynthesis.onvoiceschanged = populateVoices;
@@ -50,23 +42,30 @@ function setSpeech() {
 }
 
 
-// Speak
+// Speak function
 function toggle() {
-    setSpeech();
+    const text = document.querySelector('[name="text"]').value;
 
-    if (!msg.text.trim()) return;
+    if (!text.trim()) {
+        alert("Please enter some text");
+        return;
+    }
+
+    voices = window.speechSynthesis.getVoices();
 
     if (voices.length === 0) {
         alert("No voices available");
         return;
     }
 
+    setSpeech();
+
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(msg);
 }
 
 
-// Stop
+// Stop function
 function stop() {
     window.speechSynthesis.cancel();
 }
@@ -77,15 +76,17 @@ speakButton.addEventListener('click', toggle);
 stopButton.addEventListener('click', stop);
 
 
-// Input events
+// Rate and Pitch events
 options.forEach(option => {
     option.addEventListener('input', setSpeech);
+    option.addEventListener('change', setSpeech);
 });
 
 
-// Voice change
+// Voice change event
 voicesDropdown.addEventListener('change', () => {
-    const wasSpeaking = window.speechSynthesis.speaking;
+    const wasSpeaking = window.speechSynthesis.speaking ||
+                        window.speechSynthesis.pending;
 
     setSpeech();
 
