@@ -12,41 +12,36 @@ const stopButton = document.querySelector('#stop');
 function populateVoices() {
     voices = window.speechSynthesis.getVoices();
 
+    const previousVoice = voicesDropdown.value;
+
     voicesDropdown.innerHTML = '<option value="">Select A Voice</option>';
 
     voices.forEach((voice) => {
         const option = document.createElement('option');
-
         option.value = voice.name;
         option.textContent = `${voice.name} (${voice.lang})`;
 
         voicesDropdown.appendChild(option);
     });
 
-    if (voices.length === 0) {
-        const option = document.createElement('option');
-        option.textContent = 'No voices available';
-        voicesDropdown.appendChild(option);
+    if (voices.some(voice => voice.name === previousVoice)) {
+        voicesDropdown.value = previousVoice;
     }
 }
 
-
-// Load voices
 populateVoices();
 
-window.speechSynthesis.addEventListener('voiceschanged', populateVoices);
+window.speechSynthesis.onvoiceschanged = populateVoices;
 
 
 // Set speech settings
 function setSpeech() {
     msg.text = document.querySelector('[name="text"]').value;
-
     msg.rate = Number(document.querySelector('[name="rate"]').value);
-
     msg.pitch = Number(document.querySelector('[name="pitch"]').value);
 
     const selectedVoice = voices.find(
-        (voice) => voice.name === voicesDropdown.value
+        voice => voice.name === voicesDropdown.value
     );
 
     if (selectedVoice) {
@@ -55,51 +50,47 @@ function setSpeech() {
 }
 
 
-// Speak function
+// Speak
 function toggle() {
     setSpeech();
 
-    if (!msg.text.trim()) {
-        return;
-    }
+    if (!msg.text.trim()) return;
 
     if (voices.length === 0) {
-        alert('No voices available');
+        alert("No voices available");
         return;
     }
 
     window.speechSynthesis.cancel();
-
     window.speechSynthesis.speak(msg);
 }
 
 
-// Stop function
+// Stop
 function stop() {
     window.speechSynthesis.cancel();
 }
 
 
-// Speak and Stop events
+// Button events
 speakButton.addEventListener('click', toggle);
-
 stopButton.addEventListener('click', stop);
 
 
-// Update settings dynamically
-options.forEach((option) => {
+// Input events
+options.forEach(option => {
     option.addEventListener('input', setSpeech);
-    option.addEventListener('change', setSpeech);
 });
 
 
-// Change voice during speech
+// Voice change
 voicesDropdown.addEventListener('change', () => {
     const wasSpeaking = window.speechSynthesis.speaking;
 
     setSpeech();
 
     if (wasSpeaking) {
-        toggle();
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(msg);
     }
 });
